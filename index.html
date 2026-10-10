@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lectura Veloz con la profe May. C.T.</title>
+<style>
+:root{--bg:#fff7e0;--card:#ffffff;--sky:#8fd3ff;--mint:#a8ecc5;--pink:#ffb3d1;--sun:#ffd666;--ink:#3b2f63;--ok:#2fb36b;--bad:#ef6f6c;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:linear-gradient(160deg,#ffe9f2 0,#e5f6ff 50%,#e8ffe9 100%);color:var(--ink);font-family:"Comic Sans MS","Poppins",Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 12px;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom))}
+h1{font-size:clamp(1.4rem,6vw,2.4rem);text-align:center;margin:6px 0 16px;background:var(--sun);padding:12px 22px;border-radius:999px;box-shadow:0 5px 0 #f0b93a}
+.card{width:100%;max-width:560px;background:var(--card);border:4px solid var(--sky);border-radius:28px;padding:22px}
+.hide{display:none!important}
+label{display:block;font-weight:700;font-size:1.1rem;margin:14px 0 6px}
+input,select{width:100%;padding:14px;border-radius:18px;border:3px solid var(--mint);font:inherit;font-size:1.2rem;color:var(--ink);background:#fbfffc}
+input:focus,select:focus,button:focus-visible{outline:4px solid var(--pink);outline-offset:2px}
+.btn{font:inherit;font-weight:700;font-size:1.3rem;border:0;border-radius:999px;padding:14px 26px;cursor:pointer;color:var(--ink);background:var(--mint);box-shadow:0 5px 0 #6fc995;margin-top:18px;transition:transform .1s}
+.btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 #6fc995}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.pink{background:var(--pink);box-shadow:0 5px 0 #e888b0}
+.btn.full{width:100%}
+.err{color:var(--bad);font-weight:700;min-height:1.3em;margin:8px 0 0}
+.hud{display:flex;justify-content:space-between;gap:10px}
+.hud div{background:#eaf7ff;border-radius:18px;padding:8px 14px;font-weight:700;text-align:center;flex:1}
+.hud b{display:block;font-size:1.9rem}
+.bar{height:14px;background:#eee;border-radius:99px;margin:14px 0;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--pink),var(--sun))}
+#word{min-height:min(36vh,220px);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:clamp(1.8rem,9vw,3.6rem);overflow-wrap:anywhere;line-height:1.1}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+.tile{font:inherit;font-weight:700;font-size:1.2rem;padding:14px 6px;border-radius:18px;border:3px solid var(--sky);background:#f4fbff;color:var(--ink);cursor:pointer;overflow-wrap:anywhere}
+.tile[aria-pressed=true]{background:var(--sun);border-color:#f0b93a}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.stats div{background:#f1fff6;border:3px solid var(--mint);border-radius:18px;padding:10px 4px;text-align:center;font-size:.85rem;font-weight:700}
+.stats b{display:block;font-size:1.6rem}
+.msg{border-radius:20px;padding:16px;line-height:1.5;font-weight:700;font-size:1.1rem}
+.msg.ok{background:#e1f8ea;border:3px solid var(--ok)}
+.msg.no{background:#ffecec;border:3px solid var(--bad)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(min-width:480px){.grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<h1>Lectura Veloz con la profe May. C.T.</h1>
+
+<section id="reg" class="card">
+  <label for="nom">Nombre</label><input id="nom" autocomplete="given-name" maxlength="40">
+  <label for="ape">Apellido</label><input id="ape" autocomplete="family-name" maxlength="40">
+  <label for="niv">Grado</label><select id="niv"></select>
+  <p class="err" id="err" role="alert"></p>
+  <button class="btn full" id="go">Empezar Juego</button>
+</section>
+
+<section id="play" class="card hide">
+  <div class="hud"><div>Tiempo<b id="clock">60</b></div><div>Palabras leídas<b id="cnt">0</b></div></div>
+  <div class="bar"><i id="fill"></i></div>
+  <div id="word" aria-live="off"></div>
+</section>
+
+<section id="test" class="card hide">
+  <h2 style="margin:0 0 6px">Haz clic en 8 palabras que recuerdes haber leído</h2>
+  <p style="margin:0">Elegidas: <b id="sel">0</b> / 8</p>
+  <div class="grid" id="tiles"></div>
+  <button class="btn full" id="check" disabled>Listo</button>
+</section>
+
+<section id="res" class="card hide">
+  <h2 id="who" style="margin:0"></h2>
+  <p id="lvl" style="margin:4px 0 0;font-weight:700"></p>
+  <div class="stats">
+    <div><b id="rWords">0</b>palabras leídas</div>
+    <div><b id="rPpm">0</b>PPM del nivel</div>
+    <div><b id="rScore">0/40</b>puntos</div>
+  </div>
+  <div class="msg" id="fb"></div>
+  <button class="btn pink full" id="again">Volver a jugar</button>
+  <button class="btn full" id="change">Cambiar de jugador</button>
+</section>
+
+<script>
+const EASY=`sol luna mar casa mesa silla pato gato perro vaca oso lobo pan leche agua fuego tierra cielo nube lluvia viento flor rosa hoja árbol rama fruta uva pera mango limón piña coco papa maíz arroz sopa dulce miel queso huevo mano pie ojo boca nariz oreja pelo dedo brazo pierna cara libro lápiz goma regla cuaderno mochila bolsa zapato media gorra ropa falda saco niño niña mamá papá abuelo tío primo amigo juego pelota globo tren barco avión moto bus carro calle plaza parque río lago isla monte playa arena piedra roca luz noche día hora año mes feliz triste grande chico rápido lento fuerte suave frío calor verde rojo azul negro blanco rosado morado`.split(/\s+/);
+const MED=`escuela maestra maestro alumno clase tarea lectura palabra cuento canción música pintura dibujo color figura número suma resta campo granja gallina conejo caballo oveja burro tortuga mariposa abeja hormiga araña pájaro águila delfín ballena tiburón pulpo cangrejo jirafa elefante tigre león mono serpiente lagarto rana sapo cocina comedor jardín ventana puerta pared techo piso cama almohada espejo reloj teléfono cartera camisa pantalón chompa chaqueta sombrero guante bufanda sandalia helado galleta pastel chocolate naranja plátano durazno cereza frutilla sandía tomate cebolla zanahoria lechuga`.split(/\s+/);
+const HARD=`aventura biblioteca computadora paisaje montaña cordillera volcán cascada bosque selva desierto tormenta relámpago arcoíris estrella planeta galaxia cometa océano península historia leyenda tradición costumbre fiesta carnaval bandera himno ciudadano comunidad familia vecino amistad respeto honestidad valentía generosidad paciencia alegría esperanza imaginación curiosidad inteligencia cuidado naturaleza animal vegetal mineral reciclaje energía proteína vitamina saludable deporte campeón entrenador competencia esfuerzo disciplina equipo compañero responsabilidad solidaridad descubrimiento investigación experimento invento herramienta construcción ingeniero arquitecto doctora bombero policía granjero pescador panadero carpintero mecánico`.split(/\s+/);
+const uniq=a=>[...new Set(a)];
+const P1=uniq(EASY),P2=uniq([...EASY,...MED]),P3=uniq([...MED,...HARD]);
+// [nombre, PPM, banco de palabras]
+const NIV=[["Junior",40,P1],["1º de primaria",60,P1],["2º de primaria",85,P1],["3º de primaria",100,P2],["4º de primaria",115,P2],["5º de primaria",125,P3],["6º de primaria",135,P3]];
+const $=id=>document.getElementById(id);
+const show=id=>["reg","play","test","res"].forEach(s=>$(s).classList.toggle("hide",s!==id));
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+NIV.forEach(([n,p],i)=>{const o=document.createElement("option");o.value=i;o.textContent=`${n} (${p} PPM)`;$("niv").appendChild(o)});
+let S={};
+
+function start(){
+  const nom=$("nom").value.trim(),ape=$("ape").value.trim();
+  if(!nom||!ape){$("err").textContent="Escribe tu nombre y tu apellido.";return}
+  $("err").textContent="";
+  const [lv,ppm,bank]=NIV[$("niv").value];
+  S={nom,ape,lv,ppm,iv:60000/ppm,words:shuffle(bank.slice()),read:0};
+  $("cnt").textContent="0";$("clock").textContent="60";$("fill").style.width="100%";
+  show("play");
+  let c=3;$("word").textContent="¡Prepárate! "+c;
+  const cd=setInterval(()=>{c--;if(c>0)$("word").textContent="¡Prepárate! "+c;else{clearInterval(cd);run()}},1000);
+}
+function run(){
+  const t0=performance.now();let last=-1;
+  const timer=setInterval(()=>{
+    const el=performance.now()-t0;
+    if(el>=60000){clearInterval(timer);$("fill").style.width="0%";$("clock").textContent="0";return finish()}
+    const idx=Math.floor(el/S.iv);
+    if(idx!==last){last=idx;S.read=idx+1;$("word").textContent=S.words[idx];$("cnt").textContent=S.read}
+    $("clock").textContent=Math.ceil((60000-el)/1000);
+    $("fill").style.width=(100-el/600)+"%";
+  },16);
+}
+function finish(){
+  S.correct=new Set(shuffle(S.words.slice(0,S.read)).slice(0,8));
+  const traps=shuffle(S.words.slice(S.read)).slice(0,5);
+  const cards=shuffle([...S.correct,...traps]);
+  S.sel=new Set();$("sel").textContent="0";$("check").disabled=true;
+  $("tiles").innerHTML="";
+  cards.forEach(w=>{
+    const b=document.createElement("button");b.className="tile";b.textContent=w;b.setAttribute("aria-pressed","false");
+    b.onclick=()=>{
+      if(S.sel.has(w)){S.sel.delete(w);b.setAttribute("aria-pressed","false")}
+      else if(S.sel.size<8){S.sel.add(w);b.setAttribute("aria-pressed","true")}
+      $("sel").textContent=S.sel.size;$("check").disabled=S.sel.size!==8;
+    };
+    $("tiles").appendChild(b);
+  });
+  show("test");
+}
+function results(){
+  let hits=0;S.sel.forEach(w=>{if(S.correct.has(w))hits++});
+  const pts=hits*4,win=hits===8;
+  $("who").textContent=`${S.nom} ${S.ape}`;
+  $("lvl").textContent=`Nivel: ${S.lv}`;
+  $("rWords").textContent=S.read;$("rPpm").textContent=S.ppm;$("rScore").textContent=pts+"/40";
+  const fb=$("fb");fb.className="msg "+(win?"ok":"no");
+  fb.textContent=win
+    ?`¡Felicidades ${S.nom}, eres un campeón de la lectura! Has completado el nivel. Tu calificación es ${pts}/40, leíste ${S.read} palabras en un minuto y tu nivel de lectura veloz es ${S.lv} (${S.ppm} PPM).`
+    :`¡Buen esfuerzo ${S.nom}! Estás en camino a ser un gran lector. Lograste ${pts}/40 puntos. ¡Inténtalo de nuevo!`;
+  show("res");
+}
+$("go").onclick=start;
+$("check").onclick=results;
+$("again").onclick=start;
+$("change").onclick=()=>{$("nom").value="";$("ape").value="";$("niv").selectedIndex=0;show("reg")};
+[$("nom"),$("ape")].forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter")start()}));
+</script>
+</body>
+</html>
